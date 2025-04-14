@@ -8,7 +8,11 @@
 </head>
 
 <body>
-    costumer
+    <form action="login.php" method="post">
+        <input type="text">Name
+        <input type="text">Password
+        <button>Submit</button>
+    </form>
 </body>
 
 </html>
