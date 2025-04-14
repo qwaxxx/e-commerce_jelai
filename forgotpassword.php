@@ -1,3 +1,91 @@
+<?php
+session_start();
+include("api/conn.php");
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'phpmailer/src/Exception.php';
+require 'phpmailer/src/PHPMailer.php';
+require 'phpmailer/src/SMTP.php';
+
+if (isset($_POST['submit'])) {
+    $email = filter_var($_POST['email'], FILTER_SANITIZE_EMAIL);
+
+    if (!filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        $_SESSION['error_message'] = "Please enter a valid email address.";
+        header("Location: forgotpassword.php");
+        exit;
+    }
+
+    // Check if the email exists in the database
+    $query = "SELECT * FROM users WHERE email = ?";
+    $stmt = $conn->prepare($query);
+    if (!$stmt) {
+        $_SESSION['error_message'] = "Database error: Unable to prepare statement.";
+        header("Location: forgotpassword");
+        exit;
+    }
+    $stmt->bind_param('s', $email);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        // User found, generate a token
+        $token = bin2hex(random_bytes(32));
+        $expires = date("U") + 1800; // Token expires in 30 minutes
+
+        // Insert or update the token in the `password_resets` table
+        $query = "INSERT INTO password_resets (email, token, expires) VALUES (?, ?, ?) 
+                  ON DUPLICATE KEY UPDATE token = VALUES(token), expires = VALUES(expires)";
+        $stmt = $conn->prepare($query);
+        if (!$stmt) {
+            $_SESSION['error_message'] = "Database error: Unable to prepare token insertion.";
+            header("Location: forgotpassword.php");
+            exit;
+        }
+        $stmt->bind_param('sss', $email, $token, $expires);
+        $stmt->execute();
+
+        // Create the reset link
+        $resetLink = "https://localhost/e-commerce_jelai/forgot_password_otp_confirm.php?token=$token&email=$email";
+
+        // Send email using PHPMailer
+        $mail = new PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'remoterouter71@gmail.com';
+            $mail->Password = 'dspkvdhaakctmgdu';  // Make sure this password is correct or use an app password
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port = 465;
+
+            $mail->setFrom('remoterouter71@gmail.com', 'Password Recovery');
+            $mail->addAddress($email);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'Password Reset Request';
+            $mail->Body = "<p>Hello,</p>
+                           <p>Click the link below to reset your password:</p>
+                           <a href='$resetLink'>$resetLink</a>
+                           <p>If you didn't request this, please ignore this email.</p>";
+
+            $mail->send();
+            $_SESSION['success_message'] = "A password reset link has been sent to your email. <a href='https://mail.google.com/mail/u/0/#inbox' target='_blank'>Click here to check your inbox.</a>";
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = "Failed to send email. Error: {$mail->ErrorInfo}";
+        }
+    } else {
+        $_SESSION['error_message'] = "No user found with this email address.";
+    }
+
+    header("Location: forgotpassword.php");
+    exit;
+}
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,7 +93,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Login</title>
+    <title>Password Recovery</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css">
     <!-- Bootstrap core CSS -->
@@ -92,7 +180,7 @@
 
             <!-- Brand -->
             <a class="navbar-brand waves-effect" href="index.php">
-                <strong class="blue-text">Lappy</strong>
+                <strong class="blue-text">E-commerce</strong>
             </a>
 
             <!-- Collapse -->
@@ -139,43 +227,16 @@
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-xl-12 col-md-10">
-                        <form class="bg-white rounded shadow-5-strong p-5" method="POST" action="login_process.php">
-                            <!-- Email input -->
-                            <div class="form-outline mb-4" data-mdb-input-init>
-                            <input type="email" id="form1Example1" class="form-control" name="email"
-                            value="<?php echo isset($_COOKIE['email']) ? $_COOKIE['email'] : ''; ?>" />
-                                <label class="form-label" for="form1Example1">Email address</label>
+                        <form class="bg-white rounded shadow-5-strong p-5" method="post">
+
+                             <!-- Email input -->
+                             <div class="form-outline mb-4" data-mdb-input-init>
+                             <label class="form-label" for="email">Email address</label>
+                                <input type="email" id="email" class="form-control" name="email" placeholder="Enter your Email" required />
                             </div>
-
-                            <!-- Password input -->
-                            <div class="form-outline mb-4" data-mdb-input-init>
-                            <input type="password" id="form1Example2" class="form-control" name="password"
-                            value="<?php echo isset($_COOKIE['password']) ? $_COOKIE['password'] : ''; ?>" />
-                                <label class="form-label" for="form1Example2">Password</label>
-                            </div>
-
-                            <!-- 2 column grid layout for inline styling -->
-                            <div class="row mb-4">
-                                <div class="col d-flex justify-content-center">
-                                    <!-- Checkbox -->
-                                    <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="remember" id="form1Example3" />
-                                        <label class="form-check-label" for="form1Example3">
-                                            Remember me
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="col text-center">
-                                    <!-- Simple link -->
-                                    <a href="forgotpassword.php">Forgot password?</a>
-                                </div>
-                            </div>
-
                             <!-- Submit button -->
-                            <button type="submit" class="btn btn-primary btn-block" data-mdb-ripple-init>Sign in</button>
-                            <a href="register.php" class="btn btn-primary mt-2 btn-block">Register</a>
-
+                            <button type="submit" name="submit" class="btn btn-primary btn-block" data-mdb-ripple-init>Send</button>
+                            <a href="login_page.php" class="btn btn-primary mt-2 btn-block">Login</a>
                         </form>
 
                     </div>
@@ -229,18 +290,6 @@
 
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
-                            <h1 class="mb-4">
-                                <strong>Affordable Laptops Available</strong>
-                            </h1>
-
-                            <p>
-                                <strong>Choose And Use your best choice</strong>
-                            </p>
-
-                            <p class="mb-4 d-none d-md-block">
-                                <strong>Hurry up and Avail our Time-limited Products. dont waste the opportunity that comes to you my friend.</strong>
-                            </p>
-
 
                         </div>
                         <!-- Content -->
@@ -261,18 +310,7 @@
 
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
-                            <h1 class="mb-4">
-                                <strong>Affordable Laptops Available</strong>
-                            </h1>
-
-                            <p>
-                                <strong>Choose And Use your best choice</strong>
-                            </p>
-
-                            <p class="mb-4 d-none d-md-block">
-                                <strong>Hurry up and Avail our Time-limited Products. dont waste the opportunity that comes to you my friend.</strong>
-                            </p>
-
+                        
 
                         </div>
                         <!-- Content -->
@@ -289,8 +327,7 @@
 
 
     </div>
-    <!--/.Carousel Wrapper-->
-
+ 
 
     <!-- SCRIPTS -->
     <!-- JQuery -->

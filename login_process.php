@@ -1,6 +1,6 @@
 <?php
 session_start();
-include 'api/conn.php'; // Make sure this connects to your DB
+include 'api/conn.php';
 
 if ($_SERVER["REQUEST_METHOD"] == "POST") {
     $email = trim($_POST['email']);
@@ -11,24 +11,29 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
         exit;
     }
 
-    // Prevent SQL injection
     $stmt = $conn->prepare("SELECT id, email, password, user_type FROM users WHERE email = ?");
     $stmt->bind_param("s", $email);
     $stmt->execute();
     $result = $stmt->get_result();
 
-    // Check if user exists
     if ($result->num_rows === 1) {
         $user = $result->fetch_assoc();
 
-        // Verify password (assuming password is hashed)
         if (password_verify($password, $user['password'])) {
-            // Set session variables
             $_SESSION['user_id'] = $user['id'];
             $_SESSION['email'] = $user['email'];
             $_SESSION['role'] = $user['user_type'];
 
-            // Redirect based on role
+            // ✅ Set cookies if "Remember Me" is checked
+            if (isset($_POST['remember'])) {
+                setcookie('email', $email, time() + (86400 * 30), "/"); // 30 days
+                setcookie('password', $password, time() + (86400 * 30), "/");
+            } else {
+                // Clear cookies if checkbox is unchecked
+                setcookie('email', '', time() - 3600, "/");
+                setcookie('password', '', time() - 3600, "/");
+            }
+
             switch ($user['user_type']) {
                 case 'customer':
                     header("Location: customer_dashboard.php");
@@ -43,7 +48,7 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
                     echo "Unknown role.";
             }
         } else {
-            echo "Invalid password.{$user['email']}";
+            echo "Invalid password.";
         }
     } else {
         echo "No user found with that email.";
@@ -54,3 +59,4 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 } else {
     echo "Invalid request.";
 }
+?>

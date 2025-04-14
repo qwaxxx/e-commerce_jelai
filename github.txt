@@ -1,0 +1,15 @@
+
+// e upload ang file nga ganahan
+
+git add 'index.php'
+
+//mag upload og fOLDER
+git commit -m "Added css forlders"
+
+//mag upload og file
+git commit -m "3/14/25-9/40pm index.php"
+
+//e upload ang file sa github
+git push origin main
+
+

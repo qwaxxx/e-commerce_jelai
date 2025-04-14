@@ -1,11 +1,85 @@
-<!DOCTYPE html>
+<?php
+session_start();
+include("api/conn.php");
+
+// Verify token and email
+if (isset($_GET['token']) && isset($_GET['email'])) {
+    $token = htmlspecialchars($_GET['token']);
+    $email = htmlspecialchars($_GET['email']);
+
+    $query = "SELECT * FROM password_resets WHERE email = ? AND token = ?";
+    $stmt = $conn->prepare($query);
+    if (!$stmt) {
+        die("Database error: " . $conn->error);
+    }
+    $stmt->bind_param('ss', $email, $token);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows === 0) {
+        $_SESSION['toast_type'] = "error";
+        $_SESSION['toast_message'] = "Invalid or expired reset link.";
+        header("Location: login_page.php");
+        exit;
+    } else {
+        $row = $result->fetch_assoc();
+        if ($row['expires'] < time()) {
+            $_SESSION['toast_type'] = "error";
+            $_SESSION['toast_message'] = "This reset link has expired.";
+            header("Location: login_page.php");
+            exit;
+        }
+    }
+} else {
+    header("Location: login_page.php");
+    exit;
+}
+
+// Handle form submission
+if ($_SERVER["REQUEST_METHOD"] == "POST" && isset($_POST['reset_password'])) {
+    $new_password = $_POST['password'];
+    $confirm_password = $_POST['confirm_password'];
+    $email = $_POST['email'];
+    $token = $_POST['token'];
+
+    if ($new_password !== $confirm_password) {
+        $_SESSION['toast_type'] = "error";
+        $_SESSION['toast_message'] = "Passwords do not match.";
+    } else {
+        $hashed_password = password_hash($new_password, PASSWORD_DEFAULT);
+
+        // Update password
+        $update_query = "UPDATE users SET password = ? WHERE email = ?";
+        $stmt = $conn->prepare($update_query);
+        if (!$stmt) {
+            die("Database error: " . $conn->error);
+        }
+        $stmt->bind_param('ss', $hashed_password, $email);
+        $stmt->execute();
+
+        // Delete reset token
+        $delete_query = "DELETE FROM password_resets WHERE email = ?";
+        $stmt = $conn->prepare($delete_query);
+        $stmt->bind_param('s', $email);
+        $stmt->execute();
+
+        $_SESSION['toast_type'] = "success";
+        $_SESSION['toast_message'] = "Password reset successful! You can now log in.";
+        header("Location: login_page.php");
+        exit;
+    }
+}
+?>
+
+
+    <!DOCTYPE html>
 <html lang="en">
 
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Login</title>
+    <title>Password Recovery</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css">
     <!-- Bootstrap core CSS -->
@@ -92,7 +166,7 @@
 
             <!-- Brand -->
             <a class="navbar-brand waves-effect" href="index.php">
-                <strong class="blue-text">Lappy</strong>
+                <strong class="blue-text">E-commerce</strong>
             </a>
 
             <!-- Collapse -->
@@ -139,44 +213,22 @@
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-xl-12 col-md-10">
-                        <form class="bg-white rounded shadow-5-strong p-5" method="POST" action="login_process.php">
-                            <!-- Email input -->
-                            <div class="form-outline mb-4" data-mdb-input-init>
-                            <input type="email" id="form1Example1" class="form-control" name="email"
-                            value="<?php echo isset($_COOKIE['email']) ? $_COOKIE['email'] : ''; ?>" />
-                                <label class="form-label" for="form1Example1">Email address</label>
-                            </div>
+                    <form  class="bg-white rounded shadow-5-strong p-5" method="POST">
+                        <input type="hidden" name="email" value="<?php echo htmlspecialchars($_GET['email']); ?>">
+                        <input type="hidden" name="token" value="<?php echo htmlspecialchars($_GET['token']); ?>">
 
-                            <!-- Password input -->
-                            <div class="form-outline mb-4" data-mdb-input-init>
-                            <input type="password" id="form1Example2" class="form-control" name="password"
-                            value="<?php echo isset($_COOKIE['password']) ? $_COOKIE['password'] : ''; ?>" />
-                                <label class="form-label" for="form1Example2">Password</label>
-                            </div>
+                        <div class="form-group">
+                            <label>New Password</label>
+                            <input type="password" name="password" class="form-control" required minlength="4">
+                        </div>
 
-                            <!-- 2 column grid layout for inline styling -->
-                            <div class="row mb-4">
-                                <div class="col d-flex justify-content-center">
-                                    <!-- Checkbox -->
-                                    <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="remember" id="form1Example3" />
-                                        <label class="form-check-label" for="form1Example3">
-                                            Remember me
-                                        </label>
-                                    </div>
-                                </div>
+                        <div class="form-group">
+                            <label>Confirm New Password</label>
+                            <input type="password" name="confirm_password" class="form-control" required minlength="4">
+                        </div>
 
-                                <div class="col text-center">
-                                    <!-- Simple link -->
-                                    <a href="forgotpassword.php">Forgot password?</a>
-                                </div>
-                            </div>
-
-                            <!-- Submit button -->
-                            <button type="submit" class="btn btn-primary btn-block" data-mdb-ripple-init>Sign in</button>
-                            <a href="register.php" class="btn btn-primary mt-2 btn-block">Register</a>
-
-                        </form>
+                        <button type="submit" name="reset_password" class="btn btn-primary btn-block">Reset Password</button>
+                    </form>
 
                     </div>
                 </div>
@@ -209,7 +261,7 @@
 
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
-
+                         
                         </div>
                         <!-- Content -->
 
@@ -229,17 +281,6 @@
 
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
-                            <h1 class="mb-4">
-                                <strong>Affordable Laptops Available</strong>
-                            </h1>
-
-                            <p>
-                                <strong>Choose And Use your best choice</strong>
-                            </p>
-
-                            <p class="mb-4 d-none d-md-block">
-                                <strong>Hurry up and Avail our Time-limited Products. dont waste the opportunity that comes to you my friend.</strong>
-                            </p>
 
 
                         </div>
@@ -261,18 +302,7 @@
 
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
-                            <h1 class="mb-4">
-                                <strong>Affordable Laptops Available</strong>
-                            </h1>
-
-                            <p>
-                                <strong>Choose And Use your best choice</strong>
-                            </p>
-
-                            <p class="mb-4 d-none d-md-block">
-                                <strong>Hurry up and Avail our Time-limited Products. dont waste the opportunity that comes to you my friend.</strong>
-                            </p>
-
+                         
 
                         </div>
                         <!-- Content -->
@@ -285,12 +315,9 @@
             <!--/Third slide-->
 
         </div>
-        <!--/.Slides-->
-
+   
 
     </div>
-    <!--/.Carousel Wrapper-->
-
 
     <!-- SCRIPTS -->
     <!-- JQuery -->

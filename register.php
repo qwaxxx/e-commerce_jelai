@@ -1,3 +1,74 @@
+<?php
+session_start();
+include("api/conn.php");
+
+use PHPMailer\PHPMailer\PHPMailer;
+use PHPMailer\PHPMailer\Exception;
+
+require 'phpmailer/src/Exception.php';
+require 'phpmailer/src/PHPMailer.php';
+require 'phpmailer/src/SMTP.php';
+
+if (isset($_POST['submit'])) {
+    $name = trim(mysqli_real_escape_string($conn, $_POST['name']));
+    $email = trim(mysqli_real_escape_string($conn, $_POST['email']));
+    $password = $_POST['password'];
+
+    // Check if user already exists
+    $query = "SELECT * FROM users WHERE email = ? OR name = ?";
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param('ss', $email, $name);
+    $stmt->execute();
+    $result = $stmt->get_result();
+
+    if ($result->num_rows > 0) {
+        $_SESSION['error_message'] = "User with this email or username already exists!";
+        header("Location: register.php");
+        exit;
+    } else {
+        // Hash the password ONCE here
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+
+        // Store user data and hashed password in session
+        $_SESSION['name'] = $name;
+        $_SESSION['email'] = $email;
+        $_SESSION['hashed_password'] = $hashed_password;
+
+        // Generate 4-digit OTP
+        $otp = rand(1000, 9999);
+        $_SESSION['otp'] = $otp;
+
+        // Send OTP email
+        $mail = new PHPMailer(true);
+        try {
+            $mail->isSMTP();
+            $mail->Host = 'smtp.gmail.com';
+            $mail->SMTPAuth = true;
+            $mail->Username = 'remoterouter71@gmail.com'; // Your Gmail
+            $mail->Password = 'dspkvdhaakctmgdu';         // Your app password
+            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+            $mail->Port = 465;
+
+            $mail->setFrom('remoterouter71@gmail.com', 'E-commerce System');
+            $mail->addAddress($email);
+
+            $mail->isHTML(true);
+            $mail->Subject = 'OTP Registration';
+            $mail->Body = "<p>Your OTP is: <strong>" . implode(' ', str_split($otp)) . "</strong></p>";
+
+            $mail->send();
+            header("Location: register_otp_confirm.php");
+            exit;
+        } catch (Exception $e) {
+            $_SESSION['error_message'] = "Mailer Error: {$mail->ErrorInfo}";
+            header("Location: register.php");
+            exit;
+        }
+    }
+}
+?>
+
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -5,7 +76,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
-    <title>Login</title>
+    <title>Register</title>
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.11.2/css/all.css">
     <!-- Bootstrap core CSS -->
@@ -92,7 +163,7 @@
 
             <!-- Brand -->
             <a class="navbar-brand waves-effect" href="index.php">
-                <strong class="blue-text">Lappy</strong>
+                <strong class="blue-text">E-commerce</strong>
             </a>
 
             <!-- Collapse -->
@@ -139,42 +210,28 @@
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-xl-12 col-md-10">
-                        <form class="bg-white rounded shadow-5-strong p-5" method="POST" action="login_process.php">
-                            <!-- Email input -->
+                        <form class="bg-white rounded shadow-5-strong p-5" method="post">
+                            <!-- name input -->
                             <div class="form-outline mb-4" data-mdb-input-init>
-                            <input type="email" id="form1Example1" class="form-control" name="email"
-                            value="<?php echo isset($_COOKIE['email']) ? $_COOKIE['email'] : ''; ?>" />
-                                <label class="form-label" for="form1Example1">Email address</label>
+                            <label class="form-label" for="name">Name</label>
+                                <input type="text" id="name" class="form-control" name="name" />
+                            </div>
+
+                             <!-- Email input -->
+                             <div class="form-outline mb-4" data-mdb-input-init>
+                             <label class="form-label" for="email">Email address</label>
+                                <input type="email" id="email" class="form-control" name="email" />
                             </div>
 
                             <!-- Password input -->
                             <div class="form-outline mb-4" data-mdb-input-init>
-                            <input type="password" id="form1Example2" class="form-control" name="password"
-                            value="<?php echo isset($_COOKIE['password']) ? $_COOKIE['password'] : ''; ?>" />
-                                <label class="form-label" for="form1Example2">Password</label>
-                            </div>
-
-                            <!-- 2 column grid layout for inline styling -->
-                            <div class="row mb-4">
-                                <div class="col d-flex justify-content-center">
-                                    <!-- Checkbox -->
-                                    <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="remember" id="form1Example3" />
-                                        <label class="form-check-label" for="form1Example3">
-                                            Remember me
-                                        </label>
-                                    </div>
-                                </div>
-
-                                <div class="col text-center">
-                                    <!-- Simple link -->
-                                    <a href="forgotpassword.php">Forgot password?</a>
-                                </div>
+                            <label class="form-label" for="password">Password</label>
+                                <input type="password" id="password" class="form-control" name="password" />
                             </div>
 
                             <!-- Submit button -->
-                            <button type="submit" class="btn btn-primary btn-block" data-mdb-ripple-init>Sign in</button>
-                            <a href="register.php" class="btn btn-primary mt-2 btn-block">Register</a>
+                            <button type="submit" name="submit" class="btn btn-primary btn-block" data-mdb-ripple-init>Register</button>
+                            <a href="login_page.php" class="btn btn-primary mt-2 btn-block">Login</a>
 
                         </form>
 
@@ -210,6 +267,7 @@
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
 
+
                         </div>
                         <!-- Content -->
 
@@ -229,19 +287,7 @@
 
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
-                            <h1 class="mb-4">
-                                <strong>Affordable Laptops Available</strong>
-                            </h1>
-
-                            <p>
-                                <strong>Choose And Use your best choice</strong>
-                            </p>
-
-                            <p class="mb-4 d-none d-md-block">
-                                <strong>Hurry up and Avail our Time-limited Products. dont waste the opportunity that comes to you my friend.</strong>
-                            </p>
-
-
+                         
                         </div>
                         <!-- Content -->
 
@@ -261,18 +307,6 @@
 
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
-                            <h1 class="mb-4">
-                                <strong>Affordable Laptops Available</strong>
-                            </h1>
-
-                            <p>
-                                <strong>Choose And Use your best choice</strong>
-                            </p>
-
-                            <p class="mb-4 d-none d-md-block">
-                                <strong>Hurry up and Avail our Time-limited Products. dont waste the opportunity that comes to you my friend.</strong>
-                            </p>
-
 
                         </div>
                         <!-- Content -->
@@ -287,9 +321,7 @@
         </div>
         <!--/.Slides-->
 
-
     </div>
-    <!--/.Carousel Wrapper-->
 
 
     <!-- SCRIPTS -->

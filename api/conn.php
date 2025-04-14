@@ -1,7 +1,7 @@
 <?php
 $host = "localhost";
-$username = "root";  // Change if using a different user
-$password = "";      // Change if using a password
+$username = "jecefi";  // Change if using a different user
+$password = "123456789";      // Change if using a password
 $dbname = "e-commerce";
 
 // Connect to MySQL
