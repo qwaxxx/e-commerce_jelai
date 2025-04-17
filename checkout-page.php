@@ -4,6 +4,7 @@ include 'api/conn.php';
 $cart = $_SESSION['cart'] ?? []; // cart should be an associative array: ['prod_id' => qty]
 $total = 0;
 
+
 ?>
 
 <!DOCTYPE html>
@@ -61,7 +62,6 @@ $total = 0;
 
                     <?php if (isset($_SESSION['user_id']) && !empty($_SESSION['user_id'])):
                         // Fetch user's name from DB
-                        include 'api/conn.php';
                         $user_id = $_SESSION['user_id'];
                         $stmt = $conn->prepare("SELECT name FROM users WHERE id = ?");
                         $stmt->bind_param("i", $user_id);

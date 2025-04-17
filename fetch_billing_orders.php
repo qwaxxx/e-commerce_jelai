@@ -4,6 +4,7 @@ session_start();
 include 'api/conn.php';
 
 $user_id = $_SESSION['user_id'] ?? null;
+$temp_id = $_SESSION['temp_id'] ?? null;
 
 $response = [];
 

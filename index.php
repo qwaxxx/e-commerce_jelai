@@ -1,8 +1,9 @@
 <?php
 session_start();
 include 'api/conn.php';
+//session_unset(); // Unsets all session variables
+//session_destroy(); // Destroys the session entirely
 $cart = $_SESSION['cart'] ?? [];
-
 if (!isset($_SESSION['user_id']) && !isset($_SESSION['temp_id'])) {
     $_SESSION['temp_id'] = uniqid("guest_", true);
 }
@@ -278,9 +279,10 @@ if (!isset($_SESSION['user_id']) && !isset($_SESSION['temp_id'])) {
 
                             <select class="form-control nav-link mdb-color lighten-3" name="price_range" id="price_range" style="color:aqua;height:42px;margin-left:2px">
                                 <option value="">Select price range</option>
-                                <option value="0-1000">₱0 - ₱1000</option>
-                                <option value="1000-2000">₱1000 - ₱2000</option>
-                                <option value="2000-3000">₱2000 - ₱3000</option>
+                                <option value="0-10000">₱0 - ₱10000</option>
+                                <option value="10001-20000">₱10001 - ₱20000</option>
+                                <option value="20001-30000">₱20001 - ₱30000</option>
+                                <option value="30001-130000">₱30001 - ₱130000</option>
                             </select>
                         </li>
 

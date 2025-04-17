@@ -36,8 +36,16 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 
             switch ($user['user_type']) {
                 case 'customer':
-                    header("Location: customer_dashboard.php");
-                    break;
+                    if (isset($_SESSION['redirect_after_login'])) {
+                        $redirectTo = $_SESSION['redirect_after_login'];
+                        unset($_SESSION['redirect_after_login']); // Clear it after use
+                        header("Location: $redirectTo");
+                        exit();
+                    } else {
+                        header("Location: customer_dashboard.php"); // Default redirect
+                        exit();
+                    }
+
                 case 'seller':
                     header("Location: seller_dashboard.php");
                     break;
@@ -59,4 +67,3 @@ if ($_SERVER["REQUEST_METHOD"] == "POST") {
 } else {
     echo "Invalid request.";
 }
-?>

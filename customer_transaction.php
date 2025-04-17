@@ -99,12 +99,12 @@ $user_id = $_SESSION['user_id'];
                     <!-- Collapse 2 -->
                     <a
                         class="list-group-item list-group-item-action py-2 ripple"
-                        href="seller_dashboard.php">
-                        <i class="fas fa-chart-area fa-fw me-3"></i><span>Sell items</span>
+                        href="customer_dashboard.php">
+                        <i class="fas fa-chart-area fa-fw me-3"></i><span>Dashboard</span>
                     </a>
                     <a
                         class="list-group-item list-group-item-action py-2 ripple"
-                        href="seller_transaction.php">
+                        href="customer_transaction.php">
                         <i class="fas fa-chart-area fa-fw me-3"></i><span>Transactions</span>
                     </a>
                 </div>
@@ -123,7 +123,7 @@ $user_id = $_SESSION['user_id'];
 
 
                 <!-- Brand -->
-                <a class="navbar-brand" href="logout.php">
+                <a class="navbar-brand" href="index.php">
                     Flappy
                 </a>
                 <!-- Search form -->
@@ -174,7 +174,7 @@ $user_id = $_SESSION['user_id'];
                         <ul
                             class="dropdown-menu dropdown-menu-end"
                             aria-labelledby="navbarDropdownMenuLink">
-                            <li><a class="dropdown-item" href="seller_profile.php">My profile</a></li>
+                            <li><a class="dropdown-item" href="customer_profile.php">My profile</a></li>
                             <li><a class="dropdown-item" href="logout.php">Logout</a></li>
                         </ul>
                     </li>
@@ -191,57 +191,7 @@ $user_id = $_SESSION['user_id'];
     <main style="margin-top: 58px;">
         <div class="container  pt-4">
 
-            <!--Navbar-->
-            <nav class="navbar navbar-expand-lg navbar-dark mdb-color lighten-3 mt-3 mb-5">
 
-                <!-- Navbar brand -->
-                <span class="navbar-brand">Categories:</span>
-
-                <!-- Collapse button -->
-                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#basicExampleNav"
-                    aria-controls="basicExampleNav" aria-expanded="false" aria-label="Toggle navigation">
-                    <span class="navbar-toggler-icon"></span>
-                </button>
-
-                <!-- Collapsible content -->
-                <div class="collapse navbar-collapse" id="basicExampleNav">
-
-                    <!-- Links -->
-                    <ul class="navbar-nav mr-auto">
-                        <li class="nav-item active">
-                            <a class="nav-link" id="showAll" href="#">All
-                                <span class="sr-only">(current)</span>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-
-                            <select class="form-control nav-link mdb-color lighten-3" name="price_range" id="price_range" style="color:aqua;height:42px;margin-left:2px">
-                                <option value="">Select price range</option>
-                                <option value="0-10000">₱0 - ₱10000</option>
-                                <option value="10001-20000">₱10001 - ₱20000</option>
-                                <option value="20001-30000">₱20001 - ₱30000</option>
-                                <option value="30001-130000">₱30001 - ₱130000</option>
-                            </select>
-                        </li>
-                        <li class="nav-item">
-                            <button type="button" class="btn btn-primary" data-mdb-toggle="modal" data-mdb-target="#addproduct">
-                                + Add product
-                            </button>
-                        </li>
-                    </ul>
-                    <!-- Links -->
-
-                    <form class="form-inline">
-                        <div class="md-form my-0">
-                            <input class="form-control mr-sm-2" type="text" placeholder="Search" id="search" aria-label="Search">
-                        </div>
-                    </form>
-                </div>
-                <!-- Collapsible content -->
-
-            </nav>
-            <!--/.Navbar-->
-            <div id="productContainer"></div>
 
 
         </div>
@@ -314,103 +264,6 @@ $user_id = $_SESSION['user_id'];
     <!--/.Footer-->
     <!-- Button trigger modal -->
 
-    <!-- Modal -->
-    <?php
-    // Query to fetch products
-    $sql = "SELECT * FROM products";
-    $result = $conn->query($sql);
-
-    if ($result->num_rows > 0): ?>
-        <?php while ($row = $result->fetch_assoc()): ?>
-            <?php $modalId = "productModal" . $row['prod_id']; ?>
-            <div class="modal fade" id="<?= $modalId; ?>" tabindex="1" role="dialog" aria-labelledby="updateProductLabel" aria-hidden="true">
-                <div class="modal-dialog" role="document">
-                    <form method="POST" action="seller_update_product.php">
-                        <div class="modal-content">
-                            <div class="modal-header">
-                                <h5 class="modal-title" id="updateProductLabel">Update Product</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                                    <span aria-hidden="true">&times;</span>
-                                </button>
-                            </div>
-                            <div class="modal-body">
-                                <input type="hidden" name="prod_id" value="<?= $row['prod_id']; ?>">
-                                <div class="form-group">
-                                    <label>Product Name</label>
-                                    <input type="text" name="prod_name" class="form-control" value="<?= $row['prod_name']; ?>" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Description</label>
-                                    <textarea name="prod_description" class="form-control" required><?= $row['prod_description']; ?></textarea>
-                                </div>
-                                <div class="form-group">
-                                    <label>Stock</label>
-                                    <input type="number" name="prod_stock" class="form-control" value="<?= $row['prod_stock']; ?>" required>
-                                </div>
-                                <div class="form-group">
-                                    <label>Price</label>
-                                    <input type="text" name="prod_price" class="form-control" value="<?= $row['prod_price']; ?>" required>
-                                </div>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="submit" class="btn btn-primary">Update Product</button>
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                            </div>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        <?php endwhile; ?>
-    <?php else: ?>
-        <p class="text-center">No products available.</p>
-    <?php endif;
-    $conn->close();
-
-    ?>
-    <div class="modal fade" id="addproduct" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="exampleModalLabel">Add Items to Sell</h5>
-                    <button type="button" class="btn-close" data-mdb-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-
-                    <form action="seller_uploadprod.php" method="POST" enctype="multipart/form-data" class="p-4 border rounded shadow-sm">
-                        <div class="form-group">
-                            <label for="prod_name">Product Name</label>
-                            <input type="text" name="prod_name" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="prod_price">Price</label>
-                            <input type="number" name="prod_price" class="form-control" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="prod_stock">Stock</label>
-                            <input type="number" name="prod_stock" class="form-control" required>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="prod_description">Description</label>
-                            <textarea name="prod_description" class="form-control" rows="3" required></textarea>
-                        </div>
-
-                        <div class="form-group">
-                            <label for="prod_picture">Product Image</label>
-                            <input type="file" name="prod_picture" class="form-control-file" accept="image/*" required>
-                        </div>
-
-                        <button type="submit" name="submit" class="btn btn-primary">Add Product</button>
-                    </form>
-
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-mdb-dismiss="modal">Close</button>
-                </div>
-            </div>
-        </div>
-    </div>
-
 
 
 
@@ -424,48 +277,7 @@ $user_id = $_SESSION['user_id'];
     </script>
     <!-- JQuery -->
     <script type="text/javascript" src="js/jquery-3.4.1.min.js"></script>
-    <script>
-        $(document).ready(function() {
-            loadProducts();
 
-            $('#search').on('keyup', function() {
-                loadProducts($('#search').val(), $('#price_range').val(), 1);
-            });
-
-            $('#price_range').on('change', function() {
-                loadProducts($('#search').val(), $('#price_range').val(), 1);
-            });
-
-            $('#showAll').on('click', function(e) {
-                e.preventDefault();
-                $('#search').val('');
-                $('#price_range').val('');
-                loadProducts();
-            });
-
-            // Handle pagination click (delegate since it’s loaded via AJAX)
-            $(document).on('click', '.pagination-link', function(e) {
-                e.preventDefault();
-                const page = $(this).data('page');
-                loadProducts($('#search').val(), $('#price_range').val(), page);
-            });
-
-            function loadProducts(search = '', price = '', page = 1) {
-                $.ajax({
-                    url: 'seller_fetch_products.php',
-                    method: 'POST',
-                    data: {
-                        search: search,
-                        price: price,
-                        page: page
-                    },
-                    success: function(data) {
-                        $('#productContainer').html(data);
-                    }
-                });
-            }
-        });
-    </script>
 
     <!-- Bootstrap -->
     <script type="text/javascript" src="js/popper.min.js"></script>

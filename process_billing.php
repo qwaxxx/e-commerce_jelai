@@ -7,6 +7,13 @@ if (isset($_SESSION['checkout_form'])) {
 }
 
 
+if (!isset($_SESSION['user_id']) && isset($_SESSION['temp_id'])) {
+    $_SESSION['checkout_form'] = $_POST; // 👈 Add this line
+    $_SESSION['redirect_after_login'] = 'process_billing.php';
+    header("Location: login_page.php");
+    exit();
+}
+
 // If session has user_id OR both user_id and temp_id, bypass login
 if (isset($_SESSION['user_id']) || (isset($_SESSION['user_id']) && isset($_SESSION['temp_id']))) {
     // Allow access to page
@@ -135,7 +142,7 @@ if (isset($_SESSION['user_id']) || (isset($_SESSION['user_id']) && isset($_SESSI
     header("Location: checkout_summary.php"); // Or order success page
 
 } elseif (isset($_SESSION['temp_id']) && !isset($_SESSION['user_id'])) {
-    // Only temp_id exists → register user
+    /* Only temp_id exists → register user
 
     $first_name = $_POST['first_name'];
     $last_name = $_POST['last_name'];
@@ -171,7 +178,7 @@ if (isset($_SESSION['user_id']) || (isset($_SESSION['user_id']) && isset($_SESSI
         // Email already exists — redirect to login
         header("Location: login_page.php?error=Email already exists");
         exit();
-    }
+    }*/
 } else {
     // No session at all → redirect to login
     header("Location: login_page.php");

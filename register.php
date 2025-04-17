@@ -213,19 +213,19 @@ if (isset($_POST['submit'])) {
                         <form class="bg-white rounded shadow-5-strong p-5" method="post">
                             <!-- name input -->
                             <div class="form-outline mb-4" data-mdb-input-init>
-                            <label class="form-label" for="name">Name</label>
+                                <label class="form-label" for="name">Name</label>
                                 <input type="text" id="name" class="form-control" name="name" />
                             </div>
 
-                             <!-- Email input -->
-                             <div class="form-outline mb-4" data-mdb-input-init>
-                             <label class="form-label" for="email">Email address</label>
+                            <!-- Email input -->
+                            <div class="form-outline mb-4" data-mdb-input-init>
+                                <label class="form-label" for="email">Email address</label>
                                 <input type="email" id="email" class="form-control" name="email" />
                             </div>
 
                             <!-- Password input -->
                             <div class="form-outline mb-4" data-mdb-input-init>
-                            <label class="form-label" for="password">Password</label>
+                                <label class="form-label" for="password">Password</label>
                                 <input type="password" id="password" class="form-control" name="password" />
                             </div>
 
@@ -287,7 +287,7 @@ if (isset($_POST['submit'])) {
 
                         <!-- Content -->
                         <div class="text-center white-text mx-5 wow fadeIn">
-                         
+
                         </div>
                         <!-- Content -->
 
