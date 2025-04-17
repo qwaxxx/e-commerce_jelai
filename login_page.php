@@ -1,3 +1,9 @@
+<?php
+session_start();
+$cart = $_SESSION['cart'] ?? [];
+
+?>
+
 <!DOCTYPE html>
 <html lang="en">
 
@@ -112,8 +118,8 @@
                 <!-- Right -->
                 <ul class="navbar-nav nav-flex-icons">
                     <li class="nav-item">
-                        <a class="nav-link waves-effect">
-                            <span class="badge red z-depth-1 mr-1"> 0 </span>
+                        <a class="nav-link waves-effect" href="checkout-page.php">
+                            <span class="badge red z-depth-1 mr-1"> <?php echo count($cart)  ?> </span>
                             <i class="fas fa-shopping-cart"></i>
                             <span class="clearfix d-none d-sm-inline-block"> Cart </span>
                         </a>
@@ -142,15 +148,15 @@
                         <form class="bg-white rounded shadow-5-strong p-5" method="POST" action="login_process.php">
                             <!-- Email input -->
                             <div class="form-outline mb-4" data-mdb-input-init>
-                            <input type="email" id="form1Example1" class="form-control" name="email"
-                            value="<?php echo isset($_COOKIE['email']) ? $_COOKIE['email'] : ''; ?>" />
+                                <input type="email" id="form1Example1" class="form-control" name="email"
+                                    value="<?php echo isset($_COOKIE['email']) ? $_COOKIE['email'] : ''; ?>" />
                                 <label class="form-label" for="form1Example1">Email address</label>
                             </div>
 
                             <!-- Password input -->
                             <div class="form-outline mb-4" data-mdb-input-init>
-                            <input type="password" id="form1Example2" class="form-control" name="password"
-                            value="<?php echo isset($_COOKIE['password']) ? $_COOKIE['password'] : ''; ?>" />
+                                <input type="password" id="form1Example2" class="form-control" name="password"
+                                    value="<?php echo isset($_COOKIE['password']) ? $_COOKIE['password'] : ''; ?>" />
                                 <label class="form-label" for="form1Example2">Password</label>
                             </div>
 
@@ -159,7 +165,7 @@
                                 <div class="col d-flex justify-content-center">
                                     <!-- Checkbox -->
                                     <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="remember" id="form1Example3" />
+                                        <input class="form-check-input" type="checkbox" name="remember" id="form1Example3" />
                                         <label class="form-check-label" for="form1Example3">
                                             Remember me
                                         </label>

@@ -1,5 +1,10 @@
+<?php
+session_start();
+include 'api/conn.php';
+?>
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -72,14 +77,15 @@
     }
   </style>
 </head>
+
 <body>
 
   <!-- Top Navbar -->
   <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
     <div class="container-fluid">
-      
 
-      <a class="navbar-brand" href="#">E-commerce</a>
+
+      <a class="navbar-brand" href="index.php">Flappy</a>
       <button class="btn btn-outline-light me-3" id="toggleSidebar">
         <i class="fas fa-bars"></i>
       </button>
@@ -90,7 +96,9 @@
         </a>
         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
           <li><a class="dropdown-item" href="#">Profile</a></li>
-          <li><hr class="dropdown-divider"></li>
+          <li>
+            <hr class="dropdown-divider">
+          </li>
           <li><a class="dropdown-item text-danger" href="logout.php">Logout</a></li>
         </ul>
       </div>
@@ -123,4 +131,5 @@
     });
   </script>
 </body>
+
 </html>
