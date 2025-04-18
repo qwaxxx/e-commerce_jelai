@@ -3,14 +3,15 @@ session_start();
 include("api/conn.php");
 
 if (isset($_POST['submit'])) {
-    $otp = $_POST['otp'];
+    $otp = trim($_POST['otp']);
 
+    // Validate OTP
     if (isset($_SESSION['otp']) && $otp == $_SESSION['otp']) {
         // Get data from session
         $name = $_SESSION['name'];
         $email = $_SESSION['email'];
         $hashed_password = $_SESSION['hashed_password'];
-        $user_type = "customer";
+        $user_type = $_SESSION['user_type']; // ✅ Get actual selected user type
 
         // Insert user into the database
         $insert_query = "INSERT INTO users (name, email, password, user_type, create_on) VALUES (?, ?, ?, ?, NOW())";
@@ -18,18 +19,18 @@ if (isset($_POST['submit'])) {
         $stmt->bind_param('ssss', $name, $email, $hashed_password, $user_type);
 
         if ($stmt->execute()) {
-            // Clear session data
-            unset($_SESSION['otp'], $_SESSION['name'], $_SESSION['email'], $_SESSION['hashed_password']);
-            $_SESSION['success_message'] = "Registration successful!";
+            // Clear all used session values
+            unset($_SESSION['otp'], $_SESSION['name'], $_SESSION['email'], $_SESSION['hashed_password'], $_SESSION['user_type']);
+            $_SESSION['success_message'] = "🎉 Registration successful! You can now log in.";
             header("Location: login_page.php");
             exit;
         } else {
-            $_SESSION['error_message'] = "Error registering user.";
+            $_SESSION['error_message'] = "❌ Error registering user. Please try again.";
             header("Location: register_otp_confirm.php");
             exit;
         }
     } else {
-        $_SESSION['error_message'] = "Invalid OTP!";
+        $_SESSION['error_message'] = "⚠️ Invalid OTP. Please check your email and try again.";
         header("Location: register_otp_confirm.php");
         exit;
     }
