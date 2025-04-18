@@ -12,58 +12,56 @@ require 'phpmailer/src/SMTP.php';
 if (isset($_POST['submit'])) {
     $name = trim(mysqli_real_escape_string($conn, $_POST['name']));
     $email = trim(mysqli_real_escape_string($conn, $_POST['email']));
+    $user_type = trim(mysqli_real_escape_string($conn, $_POST['user_type']));
     $password = $_POST['password'];
 
-    // Check if user already exists
+    // Check for duplicate user
     $query = "SELECT * FROM users WHERE email = ? OR name = ?";
     $stmt = $conn->prepare($query);
-    $stmt->bind_param('ss', $email, $name);
+    $stmt->bind_param("ss", $email, $name);
     $stmt->execute();
     $result = $stmt->get_result();
 
     if ($result->num_rows > 0) {
-        $_SESSION['error_message'] = "User with this email or username already exists!";
+        $_SESSION['error_message'] = "User already exists!";
         header("Location: register.php");
         exit;
-    } else {
-        // Hash the password ONCE here
-        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+    }
 
-        // Store user data and hashed password in session
-        $_SESSION['name'] = $name;
-        $_SESSION['email'] = $email;
-        $_SESSION['hashed_password'] = $hashed_password;
+    // Store info in session
+    $_SESSION['name'] = $name;
+    $_SESSION['email'] = $email;
+    $_SESSION['user_type'] = $user_type;
+    $_SESSION['hashed_password'] = password_hash($password, PASSWORD_DEFAULT);
 
-        // Generate 4-digit OTP
-        $otp = rand(1000, 9999);
-        $_SESSION['otp'] = $otp;
+    // Generate and store OTP
+    $otp = rand(1000, 9999);
+    $_SESSION['otp'] = $otp;
 
-        // Send OTP email
-        $mail = new PHPMailer(true);
-        try {
-            $mail->isSMTP();
-            $mail->Host = 'smtp.gmail.com';
-            $mail->SMTPAuth = true;
-            $mail->Username = 'remoterouter71@gmail.com'; // Your Gmail
-            $mail->Password = 'dspkvdhaakctmgdu';         // Your app password
-            $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
-            $mail->Port = 465;
+    // Send email
+    $mail = new PHPMailer(true);
+    try {
+        $mail->isSMTP();
+        $mail->Host = 'smtp.gmail.com';
+        $mail->SMTPAuth = true;
+        $mail->Username = 'remoterouter71@gmail.com'; 
+        $mail->Password = 'dspkvdhaakctmgdu'; 
+        $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
+        $mail->Port = 465;
 
-            $mail->setFrom('remoterouter71@gmail.com', 'E-commerce System');
-            $mail->addAddress($email);
+        $mail->setFrom('remoterouter71@gmail.com', 'E-commerce System');
+        $mail->addAddress($email);
+        $mail->isHTML(true);
+        $mail->Subject = 'Your OTP Code';
+        $mail->Body = "<p>Hello <strong>$name</strong>,<br>Your OTP is: <strong>" . implode(' ', str_split($otp)) . "</strong></p>";
 
-            $mail->isHTML(true);
-            $mail->Subject = 'OTP Registration';
-            $mail->Body = "<p>Your OTP is: <strong>" . implode(' ', str_split($otp)) . "</strong></p>";
-
-            $mail->send();
-            header("Location: register_otp_confirm.php");
-            exit;
-        } catch (Exception $e) {
-            $_SESSION['error_message'] = "Mailer Error: {$mail->ErrorInfo}";
-            header("Location: register.php");
-            exit;
-        }
+        $mail->send();
+        header("Location: register_otp_confirm.php");
+        exit;
+    } catch (Exception $e) {
+        $_SESSION['error_message'] = "Mailer Error: {$mail->ErrorInfo}";
+        header("Location: register.php");
+        exit;
     }
 }
 ?>
@@ -210,30 +208,37 @@ if (isset($_POST['submit'])) {
             <div class="container">
                 <div class="row justify-content-center">
                     <div class="col-xl-12 col-md-10">
-                        <form class="bg-white rounded shadow-5-strong p-5" method="post">
-                            <!-- name input -->
-                            <div class="form-outline mb-4" data-mdb-input-init>
-                                <label class="form-label" for="name">Name</label>
-                                <input type="text" id="name" class="form-control" name="name" />
-                            </div>
+                    <form class="bg-white rounded shadow-5-strong p-5" method="post">
+                        <h4 class="text-center mb-4">Create Your Account</h4>
 
-                            <!-- Email input -->
-                            <div class="form-outline mb-4" data-mdb-input-init>
-                                <label class="form-label" for="email">Email address</label>
-                                <input type="email" id="email" class="form-control" name="email" />
-                            </div>
+                        <div class="form-outline mb-4">
+                            <label class="form-label" for="name">Name</label>
+                            <input type="text" id="name" class="form-control" name="name" required />
+                        </div>
 
-                            <!-- Password input -->
-                            <div class="form-outline mb-4" data-mdb-input-init>
-                                <label class="form-label" for="password">Password</label>
-                                <input type="password" id="password" class="form-control" name="password" />
-                            </div>
+                        <div class="form-outline mb-4">
+                            <label class="form-label" for="email">Email address</label>
+                            <input type="email" id="email" class="form-control" name="email" required />
+                        </div>
 
-                            <!-- Submit button -->
-                            <button type="submit" name="submit" class="btn btn-primary btn-block" data-mdb-ripple-init>Register</button>
-                            <a href="login_page.php" class="btn btn-primary mt-2 btn-block">Login</a>
+                        <div class="form-outline mb-4">
+                            <label class="form-label" for="user_type">User Type</label>
+                            <select class="form-control" id="user_type" name="user_type" required>
+                                <option disabled selected value="">Choose...</option>
+                                <option value="customer">Customer</option>
+                                <option value="seller">Seller</option>
+                            </select>
+                        </div>
 
-                        </form>
+                        <div class="form-outline mb-4">
+                            <label class="form-label" for="password">Password</label>
+                            <input type="password" id="password" class="form-control" name="password" required />
+                        </div>
+
+                        <button type="submit" name="submit" class="btn btn-primary btn-block">Register</button>
+                        <a href="login_page.php" class="btn btn-outline-secondary btn-block mt-2">Login</a>
+                    </form>
+
 
                     </div>
                 </div>
