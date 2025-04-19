@@ -100,13 +100,9 @@ $user_id = $_SESSION['user_id'];
                     <a
                         class="list-group-item list-group-item-action py-2 ripple"
                         href="customer_dashboard.php">
-                        <i class="fas fa-chart-area fa-fw me-3"></i><span>Dashboard</span>
+                        <i class="fas fa-chart-area fa-fw me-3"></i><span>Orders</span>
                     </a>
-                    <a
-                        class="list-group-item list-group-item-action py-2 ripple"
-                        href="customer_transaction.php">
-                        <i class="fas fa-chart-area fa-fw me-3"></i><span>Transactions</span>
-                    </a>
+
                 </div>
             </div>
         </nav>

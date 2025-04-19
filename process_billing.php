@@ -60,21 +60,38 @@ if (isset($_SESSION['user_id']) || (isset($_SESSION['user_id']) && isset($_SESSI
             // Insert into addcarts
             if (!empty($_SESSION['cart'])) {
                 foreach ($_SESSION['cart'] as $prod_id => $qty) {
-                    $stmt = $conn->prepare("SELECT prod_price FROM products WHERE prod_id = ?");
+                    $stmt = $conn->prepare("SELECT prod_price, prod_user_id, prod_name FROM products WHERE prod_id = ?");
                     $stmt->bind_param("i", $prod_id);
                     $stmt->execute();
                     $result = $stmt->get_result();
+
                     if ($row = $result->fetch_assoc()) {
                         $prod_price = $row['prod_price'];
+                        $prod_seller_id = $row['prod_user_id'];
+                        $prod_name = $row['prod_name'];
+                        $addcart_status = "pending";
 
-                        $insertCart = $conn->prepare("INSERT INTO addcarts (addcart_batch_id, addcart_user_id, addcart_prod_id, addcart_pcs, addcart_price) VALUES (?, ?, ?, ?, ?)");
-                        $insertCart->bind_param("siiii", $batch_id, $user_id, $prod_id, $qty, $prod_price);
+                        $insertCart = $conn->prepare("INSERT INTO addcarts (addcart_batch_id, addcart_user_id, addcart_seller_id, addcart_prod_id, addcart_pcs, addcart_price, addcart_status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                        $insertCart->bind_param("siiiids", $batch_id, $user_id, $prod_seller_id, $prod_id, $qty, $prod_price, $addcart_status);
                         $insertCart->execute();
+
+                        // Get the ID of the newly inserted addcart row
+                        $addcart_id = $insertCart->insert_id;
                         $insertCart->close();
+
+                        $notif_sql = "INSERT INTO notifications (user_id, sender_id, addcart_id, message, type) VALUES (?, ?, ?, ?, 'purchase')";
+                        $stmt1 = $conn->prepare($notif_sql);
+                        $msg = "Someone purchased your product: $prod_name / $qty pcs / Price : $prod_price";
+                        $stmt1->bind_param("iiis", $prod_seller_id, $user_id, $addcart_id, $msg);
+                        $stmt1->execute();
+                        $stmt1->close();
                     }
+
+
                     $stmt->close();
                 }
             }
+            /*
             // Get billing_order_id (for linking to the orders table)
             $billing_stmt = $conn->prepare("SELECT billing_order_id FROM billing_orders WHERE billing_$id_field = ?");
             $billing_stmt->bind_param("s", $id_value);
@@ -92,7 +109,7 @@ if (isset($_SESSION['user_id']) || (isset($_SESSION['user_id']) && isset($_SESSI
                 $order_stmt->close();
             }
 
-            $billing_stmt->close();
+            $billing_stmt->close();*/
             unset($_SESSION['cart']);
         }
     } else {
@@ -103,21 +120,38 @@ if (isset($_SESSION['user_id']) || (isset($_SESSION['user_id']) && isset($_SESSI
         // Insert into addcarts
         if (!empty($_SESSION['cart'])) {
             foreach ($_SESSION['cart'] as $prod_id => $qty) {
-                $stmt = $conn->prepare("SELECT prod_price FROM products WHERE prod_id = ?");
+                $stmt = $conn->prepare("SELECT prod_price, prod_user_id, prod_name FROM products WHERE prod_id = ?");
                 $stmt->bind_param("i", $prod_id);
                 $stmt->execute();
                 $result = $stmt->get_result();
+
                 if ($row = $result->fetch_assoc()) {
                     $prod_price = $row['prod_price'];
+                    $prod_seller_id = $row['prod_user_id'];
+                    $prod_name = $row['prod_name'];
+                    $addcart_status = "pending";
 
-                    $insertCart = $conn->prepare("INSERT INTO addcarts (addcart_batch_id, addcart_user_id, addcart_prod_id, addcart_pcs, addcart_price) VALUES (?, ?, ?, ?, ?)");
-                    $insertCart->bind_param("siiii", $batch_id, $user_id, $prod_id, $qty, $prod_price);
+                    $insertCart = $conn->prepare("INSERT INTO addcarts (addcart_batch_id, addcart_user_id, addcart_seller_id, addcart_prod_id, addcart_pcs, addcart_price, addcart_status) VALUES (?, ?, ?, ?, ?, ?, ?)");
+                    $insertCart->bind_param("siiiids", $batch_id, $user_id, $prod_seller_id, $prod_id, $qty, $prod_price, $addcart_status);
                     $insertCart->execute();
+
+                    // Get the ID of the newly inserted addcart row
+                    $addcart_id = $insertCart->insert_id;
                     $insertCart->close();
+
+                    $notif_sql = "INSERT INTO notifications (user_id, sender_id, addcart_id, message, type) VALUES (?, ?, ?, ?, 'purchase')";
+                    $stmt1 = $conn->prepare($notif_sql);
+                    $msg = "Someone purchased your product: $prod_name / $qty pcs / Price : $prod_price";
+                    $stmt1->bind_param("iiis", $prod_seller_id, $user_id, $addcart_id, $msg);
+                    $stmt1->execute();
+                    $stmt1->close();
                 }
+
+
                 $stmt->close();
             }
         }
+        /*
         // Get billing_order_id (for linking to the orders table)
         $billing_stmt = $conn->prepare("SELECT billing_order_id FROM billing_orders WHERE billing_$id_field = ?");
         $billing_stmt->bind_param("s", $id_value);
@@ -135,11 +169,11 @@ if (isset($_SESSION['user_id']) || (isset($_SESSION['user_id']) && isset($_SESSI
             $order_stmt->close();
         }
 
-        $billing_stmt->close();
+        $billing_stmt->close();*/
         unset($_SESSION['cart']);
     }
 
-    header("Location: checkout_summary.php"); // Or order success page
+    header("Location: customer_dashboard.php"); // Or order success page
 
 } elseif (isset($_SESSION['temp_id']) && !isset($_SESSION['user_id'])) {
     /* Only temp_id exists → register user

@@ -47,6 +47,7 @@ $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder
 
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
@@ -110,7 +111,6 @@ $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder
             overflow-x: hidden;
             overflow-y: auto;
         }
-        
     </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet" />
 </head>
@@ -118,15 +118,15 @@ $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder
 <body>
     <header>
 
-        <?php include 'admin_slidebar.php'?>
+        <?php include 'admin_slidebar.php' ?>
 
-        <?php include 'admin_navbar.php'?>
+        <?php include 'admin_navbar.php' ?>
 
     </header>
 
     <!--Main layout-->
     <main style="margin-top: 58px;">
-       <div class="container pt-4">
+        <div class="container pt-4">
             <div class="row mb-4">
                 <!-- Total Users Card -->
                 <div class="col-md-4">
@@ -188,4 +188,5 @@ $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder
     </script>
 
 </body>
+
 </html>

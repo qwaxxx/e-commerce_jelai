@@ -2,6 +2,10 @@
 session_start();
 include("api/conn.php");
 
+if (!isset($_SESSION['user_id'])) {
+  header("Location: login-page.php"); // redirect to login if not logged in
+  exit();
+}
 $user_id = $_SESSION['user_id'];
 ?>
 
@@ -35,6 +39,19 @@ $user_id = $_SESSION['user_id'];
 
     body {
       background-color: #fbfbfb;
+    }
+
+    html,
+    body {
+      height: 100%;
+    }
+
+    .intro {
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      background-color: rgb(212, 238, 243);
+
     }
 
     @media (min-width: 991.98px) {
@@ -74,8 +91,40 @@ $user_id = $_SESSION['user_id'];
       padding-top: 0.5rem;
       overflow-x: hidden;
       overflow-y: auto;
-      /* Scrollable contents if viewport is shorter than content. */
     }
+
+    table td,
+    table th {
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+    }
+
+    thead th {
+      color: #fff;
+
+    }
+
+    .card {
+      border-radius: .5rem;
+    }
+
+    .table-scroll {
+      border-radius: .5rem;
+    }
+
+    .table-scroll table thead th {
+      font-size: 1 rem;
+    }
+
+    thead {
+      top: 0;
+      position: sticky;
+
+    }
+
+    /* Scroll
+      able contents if viewport is shorter than content. */
   </style>
   <!-- MDB CSS -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.css" rel="stylesheet" />
@@ -100,13 +149,9 @@ $user_id = $_SESSION['user_id'];
           <a
             class="list-group-item list-group-item-action py-2 ripple"
             href="customer_dashboard.php">
-            <i class="fas fa-chart-area fa-fw me-3"></i><span>Dashboard</span>
+            <i class="fas fa-chart-area fa-fw me-3"></i><span>Orders</span>
           </a>
-          <a
-            class="list-group-item list-group-item-action py-2 ripple"
-            href="customer_transaction.php">
-            <i class="fas fa-chart-area fa-fw me-3"></i><span>Transactions</span>
-          </a>
+
         </div>
       </div>
     </nav>
@@ -141,16 +186,11 @@ $user_id = $_SESSION['user_id'];
               data-mdb-toggle="dropdown"
               aria-expanded="false">
               <i class="fas fa-bell"></i>
-              <span class="badge rounded-pill badge-notification bg-danger">1</span>
+              <span id="notificationBadge" class="badge rounded-pill badge-notification bg-danger">0</span>
+
             </a>
-            <ul
-              class="dropdown-menu dropdown-menu-end"
-              aria-labelledby="navbarDropdownMenuLink">
-              <li><a class="dropdown-item" href="#">Some news</a></li>
-              <li><a class="dropdown-item" href="#">Another news</a></li>
-              <li>
-                <a class="dropdown-item" href="#">Something else here</a>
-              </li>
+            <ul id="notificationDropdown" class="dropdown-menu dropdown-menu-end" aria-labelledby="navbarDropdownMenuLink">
+              <li><a class="dropdown-item" href="#">Loading...</a></li>
             </ul>
           </li>
 
@@ -185,17 +225,64 @@ $user_id = $_SESSION['user_id'];
     <!-- Navbar -->
   </header>
   <!--Main Navigation-->
-
-
-  <!--Main layout-->
   <main style="margin-top: 58px;">
-    <div class="container  pt-4">
 
+    <section class="intro">
 
+      <div class="container">
+        <div class="card mt-2">
+          <div class="card-header">Welcome !</div>
+          <div class="card-body">
+            <h5 class="card-title">Valued Customer,</h5>
+            <p class="card-text">You are in customer page, update your profile.</p>
+            <a href="customer_profile.php" class="btn btn-primary" data-mdb-ripple-init>Go to Profile</a>
+          </div>
+        </div>
+        <div class="row justify-content-center mt-4">
+          <div class="col-12">
+            <div class="card">
+              <div class="card-body p-0">
+                <div class="table-responsive table-scroll" data-mdb-perfect-scrollbar="true" style="position: relative; height: 700px">
+                  <div class="row mb-3">
+                    <div class="col-md-6 offset-md-3">
+                      <input type="text" id="searchInput" class="form-control" placeholder="Search orders..." onkeyup="searchTable()" />
+                    </div>
+                  </div>
+                  <table id="ordersTable" class="table table-striped mb-0">
+                    <thead style="background-color: #002d72; color:#fbfbfb">
+                      <tr style="cursor: pointer;">
+                        <th onclick="sortTable(0)">Date/Time <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(1)">Tracking ID <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(2)">Block/Lot/Street/Village <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(3)">Baranggay <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(4)">City <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(5)">Province <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(6)">Country <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(7)">Parcel Quantity <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(8)">Total Amount <span class="sort-indicator"></span></th>
+                        <th onclick="sortTable(9)">Status <span class="sort-indicator"></span></th>
 
+                      </tr>
+                    </thead>
+                    <tbody id="ordersBody">
+                    </tbody>
+                  </table>
 
-    </div>
+                </div>
+              </div>
+              <div class="d-flex justify-content-center mt-3">
+                <nav>
+
+                  <ul class="pagination" id="pagination"></ul>
+                </nav>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
   </main>
+  </section>
   <!--Main layout-->
 
   <!--Footer-->
@@ -277,7 +364,260 @@ $user_id = $_SESSION['user_id'];
   </script>
   <!-- JQuery -->
   <script type="text/javascript" src="js/jquery-3.4.1.min.js"></script>
+  <script>
+    let currentSortedColumn = -1;
+    let currentSortDirection = "asc";
 
+    function sortTable(n) {
+      const table = document.getElementById("ordersTable");
+      let rows, switching, i, x, y, shouldSwitch, dir, switchcount = 0;
+
+      switching = true;
+      dir = (n === currentSortedColumn && currentSortDirection === "asc") ? "desc" : "asc";
+
+      currentSortedColumn = n;
+      currentSortDirection = dir;
+
+      while (switching) {
+        switching = false;
+        rows = table.rows;
+
+        for (i = 1; i < (rows.length - 1); i++) {
+          shouldSwitch = false;
+          x = rows[i].getElementsByTagName("TD")[n];
+          y = rows[i + 1].getElementsByTagName("TD")[n];
+
+          let xContent = x.textContent || x.innerText;
+          let yContent = y.textContent || y.innerText;
+
+          let comparison = 0;
+
+          // Check if it's the Date/Time column (usually index 0)
+          if (n === 0) {
+            let xDate = new Date(xContent);
+            let yDate = new Date(yContent);
+            comparison = xDate - yDate;
+          } else {
+            const xNum = parseFloat(xContent);
+            const yNum = parseFloat(yContent);
+            const isNumeric = !isNaN(xNum) && !isNaN(yNum);
+
+            if (isNumeric) {
+              comparison = xNum - yNum;
+            } else {
+              comparison = xContent.toLowerCase().localeCompare(yContent.toLowerCase());
+            }
+          }
+
+          if ((dir === "asc" && comparison > 0) || (dir === "desc" && comparison < 0)) {
+            shouldSwitch = true;
+            break;
+          }
+        }
+
+        if (shouldSwitch) {
+          rows[i].parentNode.insertBefore(rows[i + 1], rows[i]);
+          switching = true;
+          switchcount++;
+        } else {
+          if (switchcount == 0 && dir === "asc") {
+            dir = "desc";
+            switching = true;
+          }
+        }
+      }
+
+      // Update sort indicators
+      const ths = table.querySelectorAll("th");
+      ths.forEach((th, index) => {
+        let span = th.querySelector(".sort-indicator");
+        if (!span) {
+          span = document.createElement("span");
+          span.className = "sort-indicator";
+          th.appendChild(span);
+        }
+        if (index === n) {
+          span.textContent = dir === "asc" ? " ▲" : " ▼";
+        } else {
+          span.textContent = "";
+        }
+      });
+    }
+  </script>
+
+
+  <script>
+    let ordersData = [];
+    const rowsPerPage = 12;
+    let currentPage = 1;
+
+    // Fetch data from server
+    fetch('customer_fetch_orders.php')
+      .then(res => res.json())
+      .then(data => {
+        console.log(data); //
+        ordersData = data;
+        displayTable(currentPage);
+        setupPagination();
+      });
+
+    // Display paginated table
+    function displayTable(page) {
+      const tbody = document.getElementById('ordersBody');
+      tbody.innerHTML = '';
+
+      const start = (page - 1) * rowsPerPage;
+      const end = start + rowsPerPage;
+      const paginatedItems = ordersData.slice(start, end);
+
+      if (paginatedItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="9" class="text-center text-muted py-4">No transactions found.</td></tr>`;
+      } else {
+        paginatedItems.forEach(row => {
+          tbody.innerHTML += `
+          <tr>
+  <td>${row.order_date}</td>
+  <td>${row.addcart_id}</td>
+  <td>${row.billing_street_village_purok}</td>
+  <td>${row.billing_baranggay}</td>
+  <td>${row.billing_city}</td>
+  <td>${row.billing_province}</td>
+  <td>${row.billing_country}</td>
+  <td>${row.total_quantity}</td>
+  <td>${row.total_amount}</td>
+  <td>${row.addcart_status}</td>
+</tr>
+        `;
+        });
+      }
+    }
+
+
+    function searchTable() {
+      const input = document.getElementById("searchInput");
+      const filter = input.value.toLowerCase();
+      const tbody = document.getElementById("ordersBody");
+      const rows = tbody.getElementsByTagName("tr");
+
+      for (let i = 0; i < rows.length; i++) {
+        const cells = rows[i].getElementsByTagName("td");
+        let rowContainsKeyword = false;
+
+        for (let j = 0; j < cells.length - 1; j++) { // Exclude the last "Action" column
+          if (cells[j].textContent.toLowerCase().includes(filter)) {
+            rowContainsKeyword = true;
+            break;
+          }
+        }
+
+        rows[i].style.display = rowContainsKeyword ? "" : "none";
+      }
+    }
+    // Setup pagination buttons
+    function setupPagination() {
+      const pagination = document.getElementById('pagination');
+      pagination.innerHTML = '';
+
+      const pageCount = Math.ceil(ordersData.length / rowsPerPage);
+
+      for (let i = 1; i <= pageCount; i++) {
+        const li = document.createElement('li');
+        li.classList.add('page-item');
+        if (i === currentPage) li.classList.add('active');
+
+        const a = document.createElement('a');
+        a.classList.add('page-link');
+        a.href = "#";
+        a.innerText = i;
+
+        a.addEventListener('click', function(e) {
+          e.preventDefault();
+          currentPage = i;
+          displayTable(currentPage);
+          setupPagination();
+        });
+
+        li.appendChild(a);
+        pagination.appendChild(li);
+      }
+    }
+  </script>
+  <script>
+    function loadNotifications(all = false) {
+      const url = all ?
+        'fetch_notification.php?all=1' :
+        'fetch_notification.php';
+
+      fetch(url)
+        .then(res => res.json())
+        .then(data => {
+          const badge = document.getElementById("notificationBadge");
+          const dd = document.getElementById("notificationDropdown");
+
+          // 1) Update badge with unread_count
+          badge.textContent = data.unread_count;
+          badge.style.display = data.unread_count ?
+            'inline-block' :
+            'none';
+
+          // 2) Build dropdown list of all notifications
+          dd.innerHTML = '';
+          if (data.notifications.length === 0) {
+            dd.innerHTML = '<li><a class="dropdown-item text-muted" href="#">No notifications</a></li>';
+            return;
+          }
+
+          data.notifications.forEach(n => {
+            const readClass = n.status === 'unread' ? 'fw-bold' : '';
+            const li = document.createElement('li');
+            li.innerHTML = `
+          <a class="dropdown-item ${readClass}"
+             href="#"
+             onclick="handleNotificationClick(${n.id}, ${n.addcart_id})">
+            ${n.message}
+          </a>`;
+            dd.appendChild(li);
+          });
+
+          // 3) “See more” if we hit the 10‑item limit
+          if (data.notifications.length > 10 && !all) {
+            const more = document.createElement('li');
+            more.innerHTML = `
+          <a class="dropdown-item text-primary fw-bold"
+             href="#"
+             onclick="loadNotifications(true)">
+            See more
+          </a>`;
+            dd.appendChild(more);
+          }
+        });
+    }
+
+    // Example of your existing click‑handler
+    function handleNotificationClick(notifId, orderId) {
+      fetch('mark_notification_read.php', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            id: notifId
+          })
+        })
+        .then(r => r.json())
+        .then(resp => {
+          if (resp.success) {
+            document.getElementById("searchInput").value = orderId;
+            searchTable();
+            loadNotifications(); // refresh both badge & list
+          } else {
+            alert("Failed to mark as read");
+          }
+        });
+    }
+
+    document.addEventListener("DOMContentLoaded", () => loadNotifications());
+  </script>
 
   <!-- Bootstrap -->
   <script type="text/javascript" src="js/popper.min.js"></script>

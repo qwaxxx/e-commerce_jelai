@@ -10,7 +10,7 @@ $page = $_POST['page'] ?? 1;
 $limit = 12;
 $offset = ($page - 1) * $limit;
 
-$sql = "SELECT * FROM products WHERE user_id = $user_id";
+$sql = "SELECT * FROM products WHERE prod_user_id = $user_id";
 
 if (!empty($search)) {
     $search = $conn->real_escape_string($search);
