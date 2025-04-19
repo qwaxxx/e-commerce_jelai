@@ -10,12 +10,47 @@ require 'phpmailer/src/PHPMailer.php';
 require 'phpmailer/src/SMTP.php';
 
 if (isset($_POST['submit'])) {
+    if (!$conn) {
+        die("Database connection failed: " . mysqli_connect_error());
+    }
+
     $name = trim(mysqli_real_escape_string($conn, $_POST['name']));
     $email = trim(mysqli_real_escape_string($conn, $_POST['email']));
+    $contact = trim(mysqli_real_escape_string($conn, $_POST['contact']));
     $user_type = trim(mysqli_real_escape_string($conn, $_POST['user_type']));
     $password = $_POST['password'];
+    $imageFileName = null;
 
-    // Check for duplicate user
+    // ✅ Handle image upload
+    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
+        $target_dir = "img/";
+        $file_tmp = $_FILES["profile_image"]["tmp_name"];
+        $original_name = basename($_FILES["profile_image"]["name"]);
+        $imageFileType = strtolower(pathinfo($original_name, PATHINFO_EXTENSION));
+        $allowed_types = ['jpg', 'jpeg', 'png', 'gif', 'webp'];
+
+        // Validate image
+        $check = getimagesize($file_tmp);
+        if ($check !== false && in_array($imageFileType, $allowed_types)) {
+            // Generate a unique filename to prevent conflicts
+            $unique_name = uniqid('IMG_', true) . '.' . $imageFileType;
+            $target_file = $target_dir . $unique_name;
+
+            if (move_uploaded_file($file_tmp, $target_file)) {
+                $imageFileName = $unique_name;
+            } else {
+                $_SESSION['error_message'] = "Sorry, there was an error uploading your image.";
+                header("Location: register.php");
+                exit;
+            }
+        } else {
+            $_SESSION['error_message'] = "File is not a valid image or file type not allowed.";
+            header("Location: register.php");
+            exit;
+        }
+    }
+
+    // ✅ Check for duplicate user
     $query = "SELECT * FROM users WHERE email = ? OR name = ?";
     $stmt = $conn->prepare($query);
     $stmt->bind_param("ss", $email, $name);
@@ -28,17 +63,19 @@ if (isset($_POST['submit'])) {
         exit;
     }
 
-    // Store info in session
+    // ✅ Store user data in session
+    $_SESSION['contact'] = $contact;
     $_SESSION['name'] = $name;
     $_SESSION['email'] = $email;
     $_SESSION['user_type'] = $user_type;
+    $_SESSION['profile_image'] = $imageFileName;
     $_SESSION['hashed_password'] = password_hash($password, PASSWORD_DEFAULT);
 
-    // Generate and store OTP
+    // ✅ Generate OTP
     $otp = rand(1000, 9999);
     $_SESSION['otp'] = $otp;
 
-    // Send email
+    // ✅ Send email using PHPMailer
     $mail = new PHPMailer(true);
     try {
         $mail->isSMTP();
@@ -49,11 +86,11 @@ if (isset($_POST['submit'])) {
         $mail->SMTPSecure = PHPMailer::ENCRYPTION_SMTPS;
         $mail->Port = 465;
 
-        $mail->setFrom('remoterouter71@gmail.com', 'E-commerce System');
+        $mail->setFrom('remoterouter71@gmail.com', 'E-commerce');
         $mail->addAddress($email);
         $mail->isHTML(true);
-        $mail->Subject = 'Your OTP Code';
-        $mail->Body = "<p>Hello <strong>$name</strong>,<br>Your OTP is: <strong>" . implode(' ', str_split($otp)) . "</strong></p>";
+        $mail->Subject = 'Verification Code';
+        $mail->Body = "<p>Hello <strong>$name</strong>,<br>Your verification code is <strong>" . implode(' ', str_split($otp)) . "</strong></p>";
 
         $mail->send();
         header("Location: register_otp_confirm.php");
@@ -65,6 +102,7 @@ if (isset($_POST['submit'])) {
     }
 }
 ?>
+
 
 
 <!DOCTYPE html>
@@ -219,6 +257,16 @@ if (isset($_POST['submit'])) {
                         <div class="form-outline mb-4">
                             <label class="form-label" for="email">Email address</label>
                             <input type="email" id="email" class="form-control" name="email" required />
+                        </div>
+
+                        <div class="form-outline mb-4">
+                            <label class="form-label" for="contact">Contact</label>
+                            <input type="text" id="contact" class="form-control" name="contact" required />
+                        </div>
+
+                        <div hidden class="form-outline mb-4">
+                            <label class="form-label" for="profile_image">Picture</label>
+                            <input type="file" name="profile_image" class="form-control">
                         </div>
 
                         <div class="form-outline mb-4">

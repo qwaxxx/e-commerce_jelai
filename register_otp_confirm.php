@@ -5,30 +5,60 @@ include("api/conn.php");
 if (isset($_POST['submit'])) {
     $otp = trim($_POST['otp']);
 
-    // Validate OTP
+    // Check if OTP matches
     if (isset($_SESSION['otp']) && $otp == $_SESSION['otp']) {
-        // Get data from session
-        $name = $_SESSION['name'];
-        $email = $_SESSION['email'];
-        $hashed_password = $_SESSION['hashed_password'];
-        $user_type = $_SESSION['user_type']; // ✅ Get actual selected user type
 
-        // Insert user into the database
-        $insert_query = "INSERT INTO users (name, email, password, user_type, create_on) VALUES (?, ?, ?, ?, NOW())";
-        $stmt = $conn->prepare($insert_query);
-        $stmt->bind_param('ssss', $name, $email, $hashed_password, $user_type);
+        // Ensure all required session data exists
+        if (
+            isset($_SESSION['contact'], $_SESSION['name'], $_SESSION['email'],
+            $_SESSION['hashed_password'], $_SESSION['user_type'])
+        ) {
+            $name           = $_SESSION['name'];
+            $email          = $_SESSION['email'];
+            $hashed_password= $_SESSION['hashed_password'];
+            $contact        = $_SESSION['contact'];
+            $user_type      = $_SESSION['user_type'];
+            $profile_image  = $_SESSION['profile_image'] ?? null;
 
-        if ($stmt->execute()) {
-            // Clear all used session values
-            unset($_SESSION['otp'], $_SESSION['name'], $_SESSION['email'], $_SESSION['hashed_password'], $_SESSION['user_type']);
-            $_SESSION['success_message'] = "🎉 Registration successful! You can now log in.";
-            header("Location: login_page.php");
-            exit;
+            // Prepare SQL insert
+            $query = "INSERT INTO users (name, email, password, contact, user_type, profile_image, create_on)
+                      VALUES (?, ?, ?, ?, ?, ?, NOW())";
+            $stmt = $conn->prepare($query);
+            if (!$stmt) {
+                $_SESSION['error_message'] = "Database error: " . $conn->error;
+                header("Location: register_otp_confirm.php");
+                exit;
+            }
+
+            $stmt->bind_param("ssssss", $name, $email, $hashed_password, $contact, $user_type, $profile_image);
+
+            if ($stmt->execute()) {
+                // ✅ Clean up session variables
+                unset(
+                    $_SESSION['otp'],
+                    $_SESSION['name'],
+                    $_SESSION['email'],
+                    $_SESSION['contact'],
+                    $_SESSION['user_type'],
+                    $_SESSION['hashed_password'],
+                    $_SESSION['profile_image']
+                );
+
+                $_SESSION['success_message'] = "🎉 Registration successful! You can now log in.";
+                header("Location: login_page.php");
+                exit;
+            } else {
+                $_SESSION['error_message'] = "❌ Registration failed. Please try again.";
+                header("Location: register_otp_confirm.php");
+                exit;
+            }
+
         } else {
-            $_SESSION['error_message'] = "❌ Error registering user. Please try again.";
-            header("Location: register_otp_confirm.php");
+            $_SESSION['error_message'] = "Session expired or missing data. Please register again.";
+            header("Location: register.php");
             exit;
         }
+
     } else {
         $_SESSION['error_message'] = "⚠️ Invalid OTP. Please check your email and try again.";
         header("Location: register_otp_confirm.php");
