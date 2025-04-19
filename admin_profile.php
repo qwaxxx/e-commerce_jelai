@@ -68,7 +68,7 @@ if (isset($_POST['update'])) {
     }
 
     $stmt->close();
-    header("Location: customer_profile.php");
+    header("Location: admin_profile.php");
     exit;
 }
 
@@ -167,7 +167,6 @@ $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder
     <!--Main layout-->
     <main style="margin-top: 58px;">
     <div class="container pt-4">
-    <h3 class="mb-4">Profile</h3>
 
     <form action="" method="POST" enctype="multipart/form-data">
         <div class="mb-3">

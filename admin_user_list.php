@@ -10,37 +10,66 @@ if (!isset($_SESSION['user_id']) || $_SESSION['role'] != 'admin') {
 
 $user_id = $_SESSION['user_id'];
 $update_success = false;
+$delete_success = false;
 
 // Handle update
-if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['id'])) {
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['id']) && !isset($_POST['delete_user'])) {
     $id = intval($_POST['id']);
     $name = trim($_POST['name']);
     $email = trim($_POST['email']);
+    $contact = trim($_POST['contact']);
+    $user_type = trim($_POST['user_type']);
+    $password = trim($_POST['password']);
     $profile_image = '';
 
-    if (isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] == 0) {
+    $has_image = isset($_FILES['profile_image']) && $_FILES['profile_image']['error'] === 0;
+    $has_password = !empty($password);
+
+    $query = "UPDATE users SET name=?, email=?, contact=?, user_type=?";
+    $params = [$name, $email, $contact, $user_type];
+    $types = "ssss";
+
+    if ($has_password) {
+        $hashed_password = password_hash($password, PASSWORD_DEFAULT);
+        $query .= ", password=?";
+        $params[] = $hashed_password;
+        $types .= "s";
+    }
+
+    if ($has_image) {
         $allowed_types = ['image/jpeg', 'image/png', 'image/gif'];
         if (in_array($_FILES['profile_image']['type'], $allowed_types)) {
             $target_dir = "img/";
-            $profile_image = basename($_FILES["profile_image"]["name"]);
+            $profile_image = uniqid() . "_" . basename($_FILES["profile_image"]["name"]);
             $target_file = $target_dir . $profile_image;
             move_uploaded_file($_FILES["profile_image"]["tmp_name"], $target_file);
 
-            $stmt = $conn->prepare("UPDATE users SET name=?, email=?, profile_image=? WHERE id=?");
-            $stmt->bind_param("sssi", $name, $email, $profile_image, $id);
-        } else {
-            // Invalid file type - do not upload
-            $stmt = $conn->prepare("UPDATE users SET name=?, email=? WHERE id=?");
-            $stmt->bind_param("ssi", $name, $email, $id);
+            $query .= ", profile_image=?";
+            $params[] = $profile_image;
+            $types .= "s";
         }
-    } else {
-        $stmt = $conn->prepare("UPDATE users SET name=?, email=? WHERE id=?");
-        $stmt->bind_param("ssi", $name, $email, $id);
     }
 
-    $stmt->execute();
+    $query .= " WHERE id=?";
+    $params[] = $id;
+    $types .= "i";
+
+    $stmt = $conn->prepare($query);
+    $stmt->bind_param($types, ...$params);
+
+    if ($stmt->execute()) {
+        $update_success = true;
+    }
     $stmt->close();
-    $update_success = true;
+}
+
+// Handle delete
+if ($_SERVER["REQUEST_METHOD"] === "POST" && isset($_POST['delete_user'])) {
+    $delete_id = intval($_POST['delete_user']);
+    $stmt = $conn->prepare("DELETE FROM users WHERE id=?");
+    $stmt->bind_param("i", $delete_id);
+    $delete_success = $stmt->execute();
+    $stmt->close();
 }
 
 // Dashboard Stats
@@ -59,6 +88,7 @@ $stmt->close();
 
 $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder.com/150';
 ?>
+
 
 <!DOCTYPE html>
 <html lang="en">
@@ -105,48 +135,55 @@ $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder
 
 <body>
 <header>
-    <?php include 'admin_slidebar.php' ?>
-    <?php include 'admin_navbar.php' ?>
+    <?php include 'admin_slidebar.php'; ?>
+    <?php include 'admin_navbar.php'; ?>
 </header>
 
 <main style="margin-top: 58px;">
 <div class="container py-4">
+    <div class="card-body">
+        <table class="table table-bordered table-hover">
+            <thead>
+            <tr>
+                <th>Name</th>
+                <th>Email</th>
+                <th>Contact</th>
+                <th>Type</th>
+                <th>Image</th>
+                <th>Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <?php
+            $users = $conn->query("SELECT id, name, email, contact, profile_image, user_type, password FROM users");
+            while ($row = $users->fetch_assoc()):
+                $img = $row['profile_image'] ? "img/" . $row['profile_image'] : "https://via.placeholder.com/50";
+                ?>
+                  <tr>
+                <td><?= htmlspecialchars($row['name']) ?></td>
+                <td><?= htmlspecialchars($row['email']) ?></td>
+                <td><?= htmlspecialchars($row['contact']) ?></td>
+                <td><?= htmlspecialchars($row['user_type']) ?></td>
+                <td><img src="<?= $img ?>" height="40" class="rounded-circle"></td>
+                <td>
+                    <button class="btn btn-warning btn-sm editBtn"
+                            data-id="<?= $row['id'] ?>"
+                            data-name="<?= htmlspecialchars($row['name']) ?>"
+                            data-email="<?= htmlspecialchars($row['email']) ?>"
+                            data-contact="<?= htmlspecialchars($row['contact']) ?>"
+                            data-user_type="<?= htmlspecialchars($row['user_type']) ?>"
+                            data-password="<?= htmlspecialchars($row['password']) ?>"
+                            data-profile="<?= $img ?>">Edit</button>
 
-    <!-- User Table -->
-    <div class="card">
-        <div class="card-header">Users</div>
-        <div class="card-body">
-            <table class="table table-bordered table-hover">
-                <thead>
-                <tr>
-                    <th>Name</th>
-                    <th>Email</th>
-                    <th>Profile Image</th>
-                    <th>Actions</th>
-                </tr>
-                </thead>
-                <tbody>
-                <?php
-                $users = $conn->query("SELECT id, name, email, profile_image FROM users");
-                while ($row = $users->fetch_assoc()):
-                    $img = $row['profile_image'] ? "img/" . $row['profile_image'] : "https://via.placeholder.com/50";
-                    ?>
-                    <tr>
-                        <td><?= htmlspecialchars($row['name']) ?></td>
-                        <td><?= htmlspecialchars($row['email']) ?></td>
-                        <td><img src="<?= $img ?>" height="40" class="rounded-circle"></td>
-                        <td>
-                            <button class="btn btn-warning btn-sm editBtn"
-                                    data-id="<?= $row['id'] ?>"
-                                    data-name="<?= htmlspecialchars($row['name']) ?>"
-                                    data-email="<?= htmlspecialchars($row['email']) ?>"
-                                    data-profile="<?= $img ?>">Edit</button>
-                        </td>
-                    </tr>
-                <?php endwhile; ?>
-                </tbody>
-            </table>
-        </div>
+                    <form method="POST" class="d-inline deleteForm">
+                        <input type="hidden" name="delete_user" value="<?= $row['id'] ?>">
+                        <button type="button" class="btn btn-danger btn-sm deleteBtn">Delete</button>
+                    </form>
+                </td>
+            </tr>
+            <?php endwhile; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 </main>
@@ -170,10 +207,27 @@ $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder
           <input type="email" class="form-control" name="email" id="modal_email" required>
         </div>
         <div class="mb-3">
+          <label>Contact</label>
+          <input type="text" class="form-control" name="contact" id="modal_contact" required>
+        </div>
+        <div class="mb-3">
+          <label class="form-label" for="modal_user_type">User Type</label>
+          <select class="form-control" id="modal_user_type" name="user_type" required>
+              <option disabled value="">Choose...</option>
+              <option value="customer">Customer</option>
+              <option value="seller">Seller</option>
+              <option value="admin">Admin</option>
+          </select>
+        </div>
+        <div class="mb-3">
           <label>Current Image</label><br>
           <img src="" id="modal_profile_img" height="70" class="rounded-circle mb-2"><br>
           <label>Change Image</label>
           <input type="file" class="form-control" name="profile_image">
+        </div>
+        <div class="mb-3">
+          <label>Password</label>
+          <input type="password" class="form-control" name="password" id="modal_password" placeholder="Leave blank to keep current password">
         </div>
       </div>
       <div class="modal-footer">
@@ -185,26 +239,66 @@ $image_src = $profile_image ? 'img/' . $profile_image : 'https://via.placeholder
 </div>
 
 <?php include 'footer.php'; ?>
-
 <script>
     $(document).ready(function () {
         $('.editBtn').click(function () {
             $('#modal_id').val($(this).data('id'));
             $('#modal_name').val($(this).data('name'));
             $('#modal_email').val($(this).data('email'));
+            $('#modal_contact').val($(this).data('contact'));
+            $('#modal_user_type').val($(this).data('user_type'));
+            $('#modal_password').val('');
             $('#modal_profile_img').attr('src', $(this).data('profile'));
             $('#editModal').modal('show');
+        });
+
+        $('.deleteBtn').click(function () {
+            const form = $(this).closest('form');
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "This will delete the user permanently!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#aaa',
+                confirmButtonText: 'Yes, delete!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
         });
 
         <?php if ($update_success): ?>
         Swal.fire({
             icon: 'success',
-            title: 'User Updated',
-            text: 'The user information has been updated successfully!',
+            title: 'Updated!',
+            text: 'User info has been successfully updated.',
             confirmButtonColor: '#3085d6'
         });
         <?php endif; ?>
     });
+</script>
+<script>
+    document.querySelector('.navbar-toggler')?.addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebarMenu');
+        sidebar.classList.toggle('show');
+    });
+</script>
+<script>
+    document.querySelector('.navbar-toggler').addEventListener('click', () => {
+        const sidebar = document.getElementById('sidebarMenu');
+        sidebar.classList.toggle('show');
+        console.log('Sidebar toggled:', sidebar.classList.contains('show'));
+    });
+</script>
+<script type="text/javascript" src="js/jquery-3.4.1.min.js"></script>
+<script type="text/javascript" src="js/popper.min.js"></script>
+<script type="text/javascript" src="js/bootstrap.min.js"></script>
+<script type="text/javascript" src="js/mdb.min.js"></script>
+<script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/mdb-ui-kit/6.4.0/mdb.min.js"></script>
+<script type="text/javascript">
+    new WOW().init();
 </script>
 
 </body>
